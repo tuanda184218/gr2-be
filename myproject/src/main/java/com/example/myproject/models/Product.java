@@ -1,6 +1,7 @@
 package com.example.myproject.models;
 
 import javax.persistence.*;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Objects;
 
@@ -14,22 +15,26 @@ public class Product {
     //validate = constraint
     @Column(nullable = false, unique = true, length = 300)
     private String productName;
-    private int year;
+    private String description;
     private Double price;
-    private String url;
+    private String image;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
+
     //default constructor
-    public Product() {}
-    //calculated field = transient, not exist in MySql
-    @Transient
-    private int age;//age is calculated from "year"
-    public int getAge() {
-        return Calendar.getInstance().get(Calendar.YEAR) - year;
+
+    public Product() {
     }
-    public Product( String productName, int year, Double price, String url) {
+
+    public Product(Long id, String productName, String description, Double price, String image, User user) {
+        this.id = id;
         this.productName = productName;
-        this.year = year;
+        this.description = description;
         this.price = price;
-        this.url = url;
+        this.image = image;
+        this.user = user;
     }
 
     public Long getId() {
@@ -48,12 +53,12 @@ public class Product {
         this.productName = productName;
     }
 
-    public int getYear() {
-        return year;
+    public String getDescription() {
+        return description;
     }
 
-    public void setYear(int year) {
-        this.year = year;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public Double getPrice() {
@@ -64,12 +69,20 @@ public class Product {
         this.price = price;
     }
 
-    public String getUrl() {
-        return url;
+    public String getImage() {
+        return image;
     }
 
-    public void setUrl(String url) {
-        this.url = url;
+    public void setImage(String image) {
+        this.image = image;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 
     @Override
@@ -77,9 +90,10 @@ public class Product {
         return "Product{" +
                 "id=" + id +
                 ", productName='" + productName + '\'' +
-                ", year=" + year +
+                ", description='" + description + '\'' +
                 ", price=" + price +
-                ", url='" + url + '\'' +
+                ", image='" + image + '\'' +
+                ", user=" + user +
                 '}';
     }
 
@@ -88,15 +102,11 @@ public class Product {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Product product = (Product) o;
-        return year == product.year
-                && age == product.age && Objects.equals(id, product.id)
-                && Objects.equals(productName, product.productName) &&
-                Objects.equals(price, product.price) && Objects.equals(url, product.url);
+        return Objects.equals(id, product.id) && Objects.equals(productName, product.productName) && Objects.equals(description, product.description) && Objects.equals(price, product.price) && Objects.equals(image, product.image) && Objects.equals(user, product.user);
     }
-
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, productName, year, price, url, age);
+        return Objects.hash(id, productName, description, price, image, user);
     }
 }

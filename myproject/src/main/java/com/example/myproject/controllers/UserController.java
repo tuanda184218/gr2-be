@@ -26,6 +26,9 @@ public class UserController {
     @Autowired
     private RoleRepository roleRepository;
 
+    @Autowired
+    PasswordEncoder encoder;
+
     @GetMapping("")
     List<User> getALLUsers() {
         return repository.findAll();
@@ -47,7 +50,7 @@ public class UserController {
 
         User user = new User(signUpRequest.getUsername(),
                 signUpRequest.getEmail(),
-                signUpRequest.getPassword());
+                encoder.encode(signUpRequest.getPassword()));
 
         Set<String> strRoles = signUpRequest.getRole();
         Set<Role> roles = new HashSet<>();
@@ -59,13 +62,13 @@ public class UserController {
         } else {
             strRoles.forEach(role -> {
                 switch (role) {
-                    case "admin":
+                    case "ROLE_ADMIN":
                         Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
                                 .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
                         roles.add(adminRole);
 
                         break;
-                    case "mod":
+                    case "ROLE_MODERATOR":
                         Role modRole = roleRepository.findByName(ERole.ROLE_MODERATOR)
                                 .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
                         roles.add(modRole);
@@ -110,11 +113,11 @@ public class UserController {
             );
         }
 
-        if (repository.existsByEmail(signUpRequest.getEmail())) {
-            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(
-                    new ResponseObject("failed", "Email already taken", "")
-            );
-        }
+//        if (repository.existsByEmail(signUpRequest.getEmail())) {
+//            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(
+//                    new ResponseObject("failed", "Email already taken", "")
+//            );
+//        }
 
         Set<String> strRoles = signUpRequest.getRole();
         Set<Role> roles = new HashSet<>();
@@ -126,13 +129,13 @@ public class UserController {
         } else {
             strRoles.forEach(role -> {
                 switch (role) {
-                    case "admin":
+                    case "ROLE_ADMIN":
                         Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
                                 .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
                         roles.add(adminRole);
 
                         break;
-                    case "mod":
+                    case "ROLE_MODERATOR":
                         Role modRole = roleRepository.findByName(ERole.ROLE_MODERATOR)
                                 .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
                         roles.add(modRole);
@@ -149,7 +152,7 @@ public class UserController {
 
             User updatedUser = repository.findById(id)
                     .map(user -> {
-                        user.setUsername(signUpRequest.getUsername());
+//                        user.setUsername(signUpRequest.getUsername());
                         user.setEmail(signUpRequest.getEmail());
                         user.setRoles(roles);
                         return repository.save(user);
