@@ -17,6 +17,8 @@ public class SignupRequest {
 
     private Set<String> role;
 
+    private  String image;
+
     @NotBlank
     @Size(min = 6, max = 40)
     private String password;
@@ -43,6 +45,14 @@ public class SignupRequest {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getImage() {
+        return image;
+    }
+
+    public void setImage(String image) {
+        this.image = image;
     }
 
     public Set<String> getRole() {

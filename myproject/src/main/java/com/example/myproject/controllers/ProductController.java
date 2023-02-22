@@ -6,14 +6,13 @@ import com.example.myproject.models.User;
 import com.example.myproject.repository.ProductRepository;
 import com.example.myproject.repository.UserRepository;
 import com.google.auth.oauth2.GoogleCredentials;
-import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.StorageOptions;
 import com.google.firebase.FirebaseApp;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -42,6 +41,7 @@ public class ProductController {
     private String bucketName;
 
     @GetMapping("")
+    @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
     List<Product> getAllProducts() {
         return repository.findAll();
     }
@@ -50,6 +50,7 @@ public class ProductController {
     //Postman : Raw, JSON
 //    @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
     @PostMapping("/")
+    @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
     public ResponseEntity<ResponseObject> createProduct(@RequestParam("productName") String productName,
                                                  @RequestParam("description") String description,
                                                  @RequestParam("price") double price,
@@ -83,9 +84,9 @@ public class ProductController {
         );
     }
 
-
     //Get detail product with id
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
     //Let's return an object with: data, message, status
     ResponseEntity<ResponseObject> findById(@PathVariable Long id) {
         Optional<Product> foundProduct = repository.findById(id);
@@ -101,6 +102,7 @@ public class ProductController {
 
     //get all product in userId
     @GetMapping("/user/{userId}")
+    @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
     ResponseEntity<ResponseObject> getProductsByUserId(@PathVariable Long userId) {
         List<Product> products = repository.findByUserId(userId);
 
@@ -113,28 +115,8 @@ public class ProductController {
                         //you can replace "ok" with your defined "error code"
                 );
     }
-
-
-    //update, upsert = update if found, otherwise insert
-//    @PutMapping("/{id}")
-//    ResponseEntity<ResponseObject> updateProduct(@RequestBody Product newProduct, @PathVariable Long id) {
-//        Product updatedProduct = repository.findById(id)
-//                .map(product -> {
-//                    product.setProductName(newProduct.getProductName());
-//                    product.setDescription(newProduct.getDescription());
-//                    product.setPrice(newProduct.getPrice());
-//                    product.setImage(newProduct.getImage());
-//                    return repository.save(product);
-//                }).orElseGet(() -> {
-//                    newProduct.setId(id);
-//                    return repository.save(newProduct);
-//                });
-//        return ResponseEntity.status(HttpStatus.OK).body(
-//                new ResponseObject("ok", "Update Product successfully", updatedProduct)
-//        );
-//    }
-
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
     ResponseEntity<ResponseObject> updateProduct(@RequestParam("productName") String productName,
                                                  @RequestParam("description") String description,
                                                  @RequestParam("price") double price,
@@ -174,6 +156,7 @@ public class ProductController {
 
     //Delete a Product => DELETE method
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
     ResponseEntity<ResponseObject> deleteProduct(@PathVariable Long id) {
         boolean exists = repository.existsById(id);
         if(exists) {
@@ -186,4 +169,5 @@ public class ProductController {
                 new ResponseObject("failed", "Cannot find product to delete", "")
         );
     }
+
 }

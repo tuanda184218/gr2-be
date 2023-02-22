@@ -4,17 +4,26 @@ import com.example.myproject.models.*;
 import com.example.myproject.payload.request.SignupRequest;
 import com.example.myproject.repository.RoleRepository;
 import com.example.myproject.repository.UserRepository;
+import com.example.myproject.security.services.UserDetailsServiceImpl;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.storage.BlobInfo;
+import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageOptions;
+import com.google.firebase.FirebaseApp;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -27,14 +36,22 @@ public class UserController {
     private RoleRepository roleRepository;
 
     @Autowired
+    private UserDetailsServiceImpl userDetailsService;
+
+    @Autowired
     PasswordEncoder encoder;
 
+    @Value("${firebase.bucket-name}")
+    private String bucketName;
+
     @GetMapping("")
+    @PreAuthorize("hasRole('ADMIN')")
     List<User> getALLUsers() {
         return repository.findAll();
     }
 
     @PostMapping("/create")
+    @PreAuthorize("hasRole('ADMIN')")
     ResponseEntity<ResponseObject> createNewUser(@Valid @RequestBody SignupRequest signUpRequest) {
         if (repository.existsByUsername(signUpRequest.getUsername())) {
             return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(
@@ -92,6 +109,7 @@ public class UserController {
 
     //get detail user
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
     ResponseEntity<ResponseObject> findById(@PathVariable Long id) {
         Optional<User> foundUser = repository.findById(id);
         return foundUser.isPresent() ?
@@ -104,20 +122,15 @@ public class UserController {
                 );
     }
 
-    //update
+//    update
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     ResponseEntity<ResponseObject> updateUser(@RequestBody SignupRequest signUpRequest, @PathVariable Long id) {
         if (repository.existsByUsername(signUpRequest.getUsername())) {
             return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(
                     new ResponseObject("failed", "Username already taken", "")
             );
         }
-
-//        if (repository.existsByEmail(signUpRequest.getEmail())) {
-//            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(
-//                    new ResponseObject("failed", "Email already taken", "")
-//            );
-//        }
 
         Set<String> strRoles = signUpRequest.getRole();
         Set<Role> roles = new HashSet<>();
@@ -152,7 +165,6 @@ public class UserController {
 
             User updatedUser = repository.findById(id)
                     .map(user -> {
-//                        user.setUsername(signUpRequest.getUsername());
                         user.setEmail(signUpRequest.getEmail());
                         user.setRoles(roles);
                         return repository.save(user);
@@ -165,10 +177,9 @@ public class UserController {
                     new ResponseObject("ok", "Update user successfully", updatedUser)
             );
         }
-
-
     //delete
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     ResponseEntity<ResponseObject> deleteUser(@PathVariable Long id) {
         boolean exists = repository.existsById(id);
         if(exists) {
@@ -180,6 +191,13 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                 new ResponseObject("failed", "Cannot find user to delete", "")
         );
+    }
+
+    //get total of users with each role
+    @GetMapping("/stats")
+    public ResponseEntity<Map<String, Long>> getTotalUserStats() {
+        Map<String, Long> stats = userDetailsService.getTotalUserStats();
+        return ResponseEntity.ok(stats);
     }
 
 }
